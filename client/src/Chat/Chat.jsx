@@ -3,14 +3,17 @@ import React, { useContext, useEffect, useState } from 'react'
 import Avatar from './Avatar'
 import Logo from './Logo'
 import { UserContext } from '../UserContext'
-import Glogo  from '../assets/noSel.gif'
+import Glogo  from '../assets/Aleft.png'
+
+
 
 
 
 function Chat() {
 
-const [newMessageText,setNewMessageText] = useState('')
+const [newMessageText,setNewMessageText] = useState('')  // for inpt 
 
+const [messages, setMessages] = useState([])
        
 //step 1 to connected to ws 
 
@@ -31,6 +34,7 @@ useEffect(()=>{
     ws.addEventListener('message' , handleMessage)
 },[])
 
+
 function showOnlinePeople(peopleArray){  //to find the unique people from online object
     const people = {};
     peopleArray.forEach(({userId,username})=> {
@@ -39,23 +43,23 @@ function showOnlinePeople(peopleArray){  //to find the unique people from online
    setOnlinePeople(people)
                   
 }
-function handleMessage(e){                      //function to handle message 
+
+
+function handleMessage(e){                      //function to handle message to receive from backend
 
 const messageData = JSON.parse(e.data);   //data -  is messgae data object from the backend 
-// console.log(messageData)
+console.log({e ,messageData})
 if('online' in messageData){            // online is the object name 
     showOnlinePeople(messageData.online)
-}else{
-    console.log({messageData});   // this receive the messgae from the back end as obj coz its send in obj
+}else if('text' in messageData){
+    setMessages(prev=> ([...prev , {...messageData}]));   // this receive the messgae from the back end as obj coz its send in obj
 }
 
 }
 
-// --- end -----
 
-const onlinePeopleExcluOurUser = {...onlinePeople}              // this delte our use from the object
 
-    delete onlinePeopleExcluOurUser[id]
+
 
 function sendMessage(e){     // submit hadnler
     e.preventDefault();
@@ -66,8 +70,36 @@ ws.send(JSON.stringify({
         text:newMessageText,
     
 })) ; 
-setNewMessageText('')       // to empty inp field once sent                   
+setNewMessageText('');       // to empty inp field once sent
+setMessages(prev => ([...prev,{
+    text:newMessageText,
+     sender:id,
+     recipient:selectedUserId,
+     id:Date.now()
+    }])); // this is to display the prev messgae sent                   
 }
+
+
+
+const onlinePeopleExcluOurUser = {...onlinePeople}              // this delte our use from the object
+
+    delete onlinePeopleExcluOurUser[id]
+
+    
+
+
+ // Filter out duplicate messages based on 'id' property  ---
+
+const messagesWithoutDupes = messages.reduce((uniqueMessages, message) => {
+   
+    if (!uniqueMessages.some((m) => m.id === message.id)) {
+      uniqueMessages.push(message);
+    }
+    return uniqueMessages;
+  }, []);
+  
+
+
 
 
   return (
@@ -136,7 +168,7 @@ setNewMessageText('')       // to empty inp field once sent
             {/* ---------------------text box from here-------------------------------  */}
 
 
-        <div className=" flex flex-col bg-blue-400 w-2/3 p-2">
+        <div className=" flex flex-col bg-blue-300 w-2/3 p-2">
 
             <div className="flex-grow">
                 {!selectedUserId && (
@@ -150,6 +182,23 @@ setNewMessageText('')       // to empty inp field once sent
                             
                         </div>
                    
+                )}
+                {!!selectedUserId && (
+                    <div className='relative h-full' >
+                            <div className='overflow-y-scroll absolute inset-0' >
+                        {messagesWithoutDupes.map(message => (
+                            <div className={(message.sender === id ? 'text-right' : 'text-left')}>
+                                <div className={'text-left inline-block p-2 my-2 rounded-md text-sm ' + (message.sender === id ? 'bg-green-500 text-white' : 'bg-white text-gray-500')}>
+                               sender: {message.sender} <br />
+                               id: {id} <br />
+                               {message.text}
+                            </div>
+                            </div>
+                            
+                        ))}
+                    </div>
+                    </div>
+                
                 )}
                 </div>
                 
