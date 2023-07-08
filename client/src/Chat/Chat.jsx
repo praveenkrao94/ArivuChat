@@ -1,21 +1,27 @@
-import React, { useEffect, useState } from 'react'
-import logo from '../assets/Alogo.png'
+import React, { useContext, useEffect, useState } from 'react'
+
 import Avatar from './Avatar'
 import Logo from './Logo'
+import { UserContext } from '../UserContext'
+import Glogo  from '../assets/noSel.gif'
 
 
 
 function Chat() {
 
-  
+const [newMessageText,setNewMessageText] = useState('')
 
-    const [ws,setWs]= useState(null)  // set ws to state
-
-    const [onlinePeople , setOnlinePeople]= useState({})  //state to store the online id 
-
-    const [selectedUserId , setSelectedUserId]= useState(null)  // to store selected Id
-
+       
 //step 1 to connected to ws 
+
+const {username , id} = useContext(UserContext)  // to fidn the currect username
+
+const [ws,setWs]= useState(null)  // set ws to state
+
+const [onlinePeople , setOnlinePeople]= useState({})  //state to store the online id 
+
+const [selectedUserId , setSelectedUserId]= useState(null)  // to store selected Id
+
 
 // ----- start ws -----
 
@@ -39,18 +45,36 @@ const messageData = JSON.parse(e.data);   //data -  is messgae data object from 
 // console.log(messageData)
 if('online' in messageData){            // online is the object name 
     showOnlinePeople(messageData.online)
+}else{
+    console.log({messageData});   // this receive the messgae from the back end as obj coz its send in obj
 }
 
 }
 
 // --- end -----
 
+const onlinePeopleExcluOurUser = {...onlinePeople}              // this delte our use from the object
+
+    delete onlinePeopleExcluOurUser[id]
+
+function sendMessage(e){     // submit hadnler
+    e.preventDefault();
+    console.log('sending..')
+ws.send(JSON.stringify({
+    
+        recipient:selectedUserId,  //send from front-end along with the selected user id
+        text:newMessageText,
+    
+})) ; 
+setNewMessageText('')       // to empty inp field once sent                   
+}
 
 
   return (
     <div className="flex h-screen">
         <div className="bg-white w-1/3 ">
           <Logo/>
+         
 
             {/* apply other buttons here */}
 
@@ -82,10 +106,16 @@ if('online' in messageData){            // online is the object name
                     {/* chats */}
 
 
-            {Object.keys(onlinePeople).map(userId => (
-                <div key={userId} onClick={()=>setSelectedUserId(userId) } className={'border-b border-gray-100 py-3 pl-4 flex items-center gap-3 cursor-pointer ' + (userId === selectedUserId ? 'bg-gray-200':" ")}>
+            {Object.keys(onlinePeopleExcluOurUser).map(userId => (
+                <div key={userId} onClick={()=>setSelectedUserId(userId) } className={'border-b border-gray-100  flex items-center gap-3 cursor-pointer ' + (userId === selectedUserId ? 'bg-gray-200':" ")}>
+                    {userId === selectedUserId && (
+                        <div className='w-1 bg-blue-500 h-12 rounded-r-md'></div>
+                    )}
+                    <div className='flex gap-3 py-3 pl-4 items-center' >
                     <Avatar username ={onlinePeople[userId]} userId={userId}/>
                     <span className='text-gray-800'>{onlinePeople[userId]}</span>
+                    </div>
+                    
                 </div>
             ))}
 
@@ -102,12 +132,33 @@ if('online' in messageData){            // online is the object name
             </div> */}
 
         </div>
-        <div className=" flex flex-col bg-blue-600 w-2/3 p-2">
 
-            <div className="flex-grow">message to selected person</div>
+            {/* ---------------------text box from here-------------------------------  */}
 
-            <div className="flex gap-2 ">
-                <input type="text" placeholder='Type Your message here' className='bg-white border p-2 flex-grow rounded-sm' />
+
+        <div className=" flex flex-col bg-blue-400 w-2/3 p-2">
+
+            <div className="flex-grow">
+                {!selectedUserId && (
+
+                   
+                        <div className='flex h-full flex-grow items-center justify-center'>
+                            <div className=''>
+                            <img src={Glogo} alt="" />
+                            <h2 className='text-white flex items-center justify-center '>&larr; Select the Chat to Display  </h2>
+                            </div>
+                            
+                        </div>
+                   
+                )}
+                </div>
+                
+{/* input box  */}
+                {!!selectedUserId && (
+                    <form className="flex gap-2" onSubmit={sendMessage}>
+                <input type="text" placeholder='Type Your message here' value={newMessageText} onChange={(e) => setNewMessageText(e.target.value)} className='bg-white border p-2 flex-grow rounded-sm'/>
+
+                
 
                 <button className='bg-blue-500 p-2 text-white rounded-sm'>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -115,7 +166,9 @@ if('online' in messageData){            // online is the object name
                     </svg>
 
                 </button>
-            </div>
+            </form>
+                )}
+            
         </div>
 
 

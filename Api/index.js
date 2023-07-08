@@ -148,10 +148,26 @@ wss.on('connection' , (connection , req)=>{
   }
  }
   }
+
+  connection.on('message',(message)=>{   // when we do this we get a object value of sending from the front
+   const messageData = JSON.parse(message.toString() ) // convert object to string 
+   const {recipient , text} = messageData; //here we get recep and text from front end 
+   if(recipient && text){   // this is to check if available then send to other user
+    [...wss.clients]
+    .filter(c=> c.userId === recipient)//here its checks the userid of target and from frotn is same
+    .forEach(c=> c.send(JSON.stringify({text})))
+      
+    
+   }
+
+    });
+
+
   
   //to see who is online or active connection  --- clients ---
 
 
+//notify everyone about online people (when somone connets)
 
 [...wss.clients].forEach(client => {   //with this we can iterate all the existing active clients adn send in json 
   client.send(JSON.stringify({
