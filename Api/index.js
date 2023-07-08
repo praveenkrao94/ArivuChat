@@ -2,6 +2,7 @@ const express = require('express');
 
 const mongoose = require('mongoose');
 
+
 const bcrypt = require('bcryptjs')
 
 const bcryptSalt = bcrypt.genSaltSync(10)
@@ -11,6 +12,8 @@ const cors = require('cors');
 const app = express();
 
 const User = require('./model/User');
+
+const ws = require('ws')
 
 
 
@@ -125,6 +128,39 @@ app.get('/profile', (req,res)=>{
 
 
 
-const server = app.listen(4040)
+const server = app.listen(4040);
+ 
+const wss = new ws.WebSocketServer({server});        //step 1   wss - holds all the connection 
+
+wss.on('connection' , (connection , req)=>{
+  const cookies = req.headers.cookie;             // process to handle and receive token from cookie
+  if(cookies){
+  const tokenCookieString =  cookies.split(';').find(str=> str.startsWith('token='));  // to filter and get token
+ if(tokenCookieString){
+  const token = tokenCookieString.split('=')[1]
+  if(token){
+    jwt.verify(token , jwtSecret ,{}, (err , userData)=> {
+      if(err) throw err;
+      const {userId,username} = userData
+      connection.userId = userId;
+      connection.username = username;
+    });
+  }
+ }
+  }
+  
+  //to see who is online or active connection  --- clients ---
+
+
+
+[...wss.clients].forEach(client => {   //with this we can iterate all the existing active clients adn send in json 
+  client.send(JSON.stringify({
+    online:[...wss.clients].map(c => ({userId:c.userId,username:c.username}))
+  }
+    
+  ))
+})
+
+});
 
 

@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import './style.css'
 import axios from 'axios';
 import { UserContext } from '../UserContext';
+import Alogo from '../assets/Alogo.png'
 
 
 
@@ -27,9 +28,17 @@ function Register() {
   return (
     <div className="bg-blue-900 h-screen">
         <div className="login-box">
-            <h2 className='text-2xl'>
+                    <div className='flex justify-center items-center'>
+            <div className='flex flex-col items-center'>
+                <div className='w-12'>
+                <img src={Alogo} alt='' />
+                </div>
+                <h2 className='text-2xl'>
                 {isloginorRegister === 'register' ? 'Register' : 'Login'}
-            </h2>
+                </h2>
+            </div>
+            </div>
+
             <form onSubmit={handleSubmit}>
                 <div className="user-box">
                     <input type="text" value={username} onChange={(ev) => setUsername(ev.target.value)} />
