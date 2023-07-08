@@ -47,7 +47,30 @@ mongoose
     console.error("Failed to connect to MongoDB:", error);
   });
 
-// ---------------------------------------
+  // ----------end of mongo connect ------------------------
+
+async function getUserDataFromRequest(req){
+  return new Promise((resolve,reject)=>{
+
+    const token = req.cookies?.token;
+    if (token) {
+      jwt.verify(token, jwtSecret, {}, (err, userData) => {
+        if (err) throw err;
+  
+        resolve(userData);
+      });
+  }else {
+    reject('no token')
+  }
+  });
+
+}
+
+// Note for why using promise for my own reference for future :
+
+//  Using async/await alone is not possible in this scenario because the jwt.verify function does not return a Promise itself. Instead, it uses a callback-based approach.
+
+// --------------------------------------- End point -creation starts -------------------------------
 
 // Register a new user
 app.post("/register", async (req, res) => {
@@ -118,9 +141,25 @@ app.get("/profile", (req, res) => {
   }
 });
 
-// -----------
+
+//for Messages 
+
+app.get('/messages/:userId', async (req ,res)=>{
+  const {userId} = req.params;
+ const userData = await getUserDataFromRequest(req);  //userdata has userid and username that was sent while creating
+ const ourUserId = userData.userId;
+
+const messages = await Message.find({
+  sender:{$in:[userId,ourUserId]},      //$in compare operator which should match either one
+  recipient:{$in:[userId,ourUserId]}
+ }).sort({createdAt:-1});      //-1 is desending order created 
+ res.json(messages)
+}) ;
 
 const server = app.listen(4040);
+
+// -----------------------start of ws ---------------------------
+
 
 const wss = new ws.WebSocketServer({ server }); //step 1   wss - holds all the connection
 

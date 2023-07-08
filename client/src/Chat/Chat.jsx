@@ -4,6 +4,7 @@ import Avatar from "./Avatar";
 import Logo from "./Logo";
 import { UserContext } from "../UserContext";
 import Glogo from "../assets/Aleft.png";
+import axios from 'axios'
 
 function Chat() {
   const [newMessageText, setNewMessageText] = useState(""); // for inpt
@@ -25,19 +26,36 @@ function Chat() {
   // ----- start ws -----
 
   useEffect(() => {
+    connectToWs()       
+  }, []);
+
+                            // - function to reconnect ws---
+
+function connectToWs(){
     const ws = new WebSocket("ws://localhost:4040"); //connect to ws
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-  }, []);
+    ws.addEventListener('close', ()=> {     // to help it reconnect becase its getting diconnected
+        setTimeout(() => {
+            console.log('Disconnected. Trying to connect...');
+            connectToWs();
+          }, 1000);
+          
+    })   
+}
 
   function showOnlinePeople(peopleArray) {
     //to find the unique people from online object
+
     const people = {};
     peopleArray.forEach(({ userId, username }) => {
       people[userId] = username; // this give only the userid and username of all active
     });
     setOnlinePeople(people);
   }
+
+
+                    //receiver function//
 
   function handleMessage(e) {
     //function to handle message to receive from backend
@@ -51,6 +69,8 @@ function Chat() {
       setMessages((prev) => [...prev, { ...messageData }]); // this receive the messgae from the back end as obj coz its send in obj
     }
   }
+
+                    //sending from client function//
 
   function sendMessage(e) {
     // submit hadnler
@@ -77,6 +97,8 @@ function Chat() {
     
    
   }
+                        // ---- use effect for scroll ----
+
   useEffect(()=>{      //using useeffect becasue it take a 0.5 mili sec for msg to come
     const div = divUnderMessages.current;
     if(div){
@@ -85,9 +107,25 @@ function Chat() {
     
   },[messages]) //message as dependency because we want to run this when ever message changes
 
+
+            // this useeffect is to get data from database
+
+  useEffect(()=>{
+    if(selectedUserId){
+        axios.get('/messages/' + selectedUserId).then()
+    }
+  },[selectedUserId])  // here selecteduserid is added becase when ever a new user is selected we need data of that
+
+
+
+
+
+
   const onlinePeopleExcluOurUser = { ...onlinePeople }; // this delte our use from the object
 
   delete onlinePeopleExcluOurUser[id];
+
+
 
   // Filter out duplicate messages based on 'id' property  ---
 
@@ -97,6 +135,9 @@ function Chat() {
     }
     return uniqueMessages;
   }, []);
+
+
+
 
   return (
     <div className="flex h-screen">
