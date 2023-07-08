@@ -5,6 +5,8 @@ import Logo from "./Logo";
 import { UserContext } from "../UserContext";
 import Glogo from "../assets/Aleft.png";
 import axios from 'axios'
+import './style.css'
+import Contact from "./Contact";
 
 function Chat() {
   const [newMessageText, setNewMessageText] = useState(""); // for inpt
@@ -12,6 +14,9 @@ function Chat() {
   const [messages, setMessages] = useState([]);
 
   const divUnderMessages = useRef();
+
+
+  const [offlinePeople,setOfflinePeople] = useState({});
 
   //step 1 to connected to ws
 
@@ -50,27 +55,28 @@ function connectToWs(){
     const people = {};
     peopleArray.forEach(({ userId, username }) => {
       people[userId] = username; // this give only the userid and username of all active
+    //   console.log(people , 'people')  //* this has all the users id and username
     });
     setOnlinePeople(people);
   }
 
 
-                    //receiver function//
+                    //!receiver function//
 
   function handleMessage(e) {
-    //function to handle message to receive from backend
+    //*function to handle message to receive from backend
 
-    const messageData = JSON.parse(e.data); //data -  is messgae data object from the backend
+    const messageData = JSON.parse(e.data); //*data -  is messgae data object from the backend
     console.log({ e, messageData });
     if ("online" in messageData) {
       // online is the object name
       showOnlinePeople(messageData.online);
     } else if ("text" in messageData) {
-      setMessages((prev) => [...prev, { ...messageData }]); // this receive the messgae from the back end as obj coz its send in obj
+      setMessages((prev) => [...prev, { ...messageData }]); //* this receive the messgae from the back end as obj coz its send in obj
     }
   }
 
-                    //sending from client function//
+                    //!sending from client function//
 
   function sendMessage(e) {
     // submit hadnler
@@ -78,59 +84,79 @@ function connectToWs(){
     console.log("sending..");
     ws.send(
       JSON.stringify({
-        recipient: selectedUserId, //send from front-end along with the selected user id
+        recipient: selectedUserId, //*send from front-end along with the selected user id
         text: newMessageText,
       })
     );
-    setNewMessageText(""); // to empty inp field once sent
+    setNewMessageText(""); //* to empty inp field once sent
 
     setMessages((prev) => [
-      // this is to display the prev messgae sent
+      //* this is to display the prev messgae sent
       ...prev,
       {
         text: newMessageText,
         sender: id,
         recipient: selectedUserId,
-        id: Date.now(),
+        _id: Date.now(),
       },
     ]);
     
    
   }
-                        // ---- use effect for scroll ----
+                        //! ---- use effect for scroll ----
 
-  useEffect(()=>{      //using useeffect becasue it take a 0.5 mili sec for msg to come
+  useEffect(()=>{      //*using useeffect becasue it take a 0.5 mili sec for msg to come
     const div = divUnderMessages.current;
     if(div){
-        div.scrollIntoView({ behavior: "smooth", block: "end" }); //ensure for smooth scroll
+        div.scrollIntoView({ behavior: "smooth", block: "end" }); //*ensure for smooth scroll
     }
     
-  },[messages]) //message as dependency because we want to run this when ever message changes
+  },[messages]) //*message as dependency because we want to run this when ever message changes
 
 
-            // this useeffect is to get data from database
+
+            //! this useeffect is to get data from database///
 
   useEffect(()=>{
     if(selectedUserId){
-        axios.get('/messages/' + selectedUserId).then()
+        axios.get('/messages/' + selectedUserId).then(res=>{
+            setMessages(res.data)
+            
+        })
+        
     }
-  },[selectedUserId])  // here selecteduserid is added becase when ever a new user is selected we need data of that
+  },[selectedUserId])  //* here selecteduserid is added becase when ever a new user is selected we need data of that
+
+    //! this useEffect is for to check if people are online ///
+
+    useEffect(()=>{
+        axios.get('/people').then(res=>{
+        const offlinePeopleArr = res.data
+        .filter(p => p._id !== id) //* checks if the received _id is same as our id
+        .filter(p => !Object.keys(onlinePeople).includes(p._id));  //~ this filter the offline people
+        const offlinePeople = {};
+            offlinePeopleArr.forEach(p => {   //~ converting offlinepoeple to object
+                offlinePeople[p._id] = p
+            })
+
+        setOfflinePeople(offlinePeople)
+        // console.log(offlinePeople , 'offlinepeople')
+        })
+    } , [onlinePeople])
 
 
 
 
-
-
-  const onlinePeopleExcluOurUser = { ...onlinePeople }; // this delte our use from the object
+  const onlinePeopleExcluOurUser = { ...onlinePeople }; //* this delte our use from the object
 
   delete onlinePeopleExcluOurUser[id];
 
 
 
-  // Filter out duplicate messages based on 'id' property  ---
+  //! Filter out duplicate messages based on 'id' property  ---
 
   const messagesWithoutDupes = messages.reduce((uniqueMessages, message) => {
-    if (!uniqueMessages.some((m) => m.id === message.id)) {
+    if (!uniqueMessages.some((m) => m._id === message._id)) {
       uniqueMessages.push(message);
     }
     return uniqueMessages;
@@ -171,24 +197,24 @@ function connectToWs(){
 
         {/* chats */}
 
-        {Object.keys(onlinePeopleExcluOurUser).map((userId) => (
-          <div
-            key={userId}
-            onClick={() => setSelectedUserId(userId)}
-            className={
-              "border-b border-gray-100  flex items-center gap-3 cursor-pointer " +
-              (userId === selectedUserId ? "bg-gray-200" : " ")
-            }
-          >
-            {userId === selectedUserId && (
-              <div className="w-1 bg-blue-500 h-12 rounded-r-md"></div>
-            )}
-            <div className="flex gap-3 py-3 pl-4 items-center">
-              <Avatar username={onlinePeople[userId]} userId={userId} />
-              <span className="text-gray-800">{onlinePeople[userId]}</span>
-            </div>
-          </div>
-        ))}
+        {Object.keys(onlinePeopleExcluOurUser).map(userId => (
+            <Contact
+              key={userId}
+              id={userId}
+              online={true}
+              username={onlinePeopleExcluOurUser[userId]}
+              onClick={() => {setSelectedUserId(userId);console.log({userId})}}
+              selected={userId === selectedUserId} />
+          ))}
+          {Object.keys(offlinePeople).map(userId => (
+            <Contact
+              key={userId}
+              id={userId}
+              online={false}
+              username={offlinePeople[userId].username}
+              onClick={() => setSelectedUserId(userId)}
+              selected={userId === selectedUserId} />
+          ))}
 
         {/* setting */}
 
@@ -221,13 +247,10 @@ function connectToWs(){
             <div className="relative h-full">
               <div className="overflow-y-scroll absolute top-0 left-0 right-0 bottom-2">
                 {messagesWithoutDupes.map((message) => (
-                  <div className={message.sender === id ? "text-right" : "text-left"}>
+                  <div key={message._id} className={message.sender === id ? "text-right" : "text-left"}>
                   
-                    <div className={"text-left inline-block p-2 my-2 rounded-md text-sm " +
+                    <div className={"text-left inline-block p-3 my-2 rounded-md text-sm " +
                         (message.sender === id ? "bg-green-500 text-white": "bg-white text-gray-500")}>
-
-                      sender: {message.sender} <br />
-                      id: {id} <br />
                       {message.text}
                     </div>
                   </div>
