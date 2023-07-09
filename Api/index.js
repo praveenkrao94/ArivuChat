@@ -126,6 +126,13 @@ app.post("/login", async (req, res) => {
   }
 });
 
+ //~ Logout //
+
+ app.post('/logout', (req , res)=>{
+  res.cookie('token' , '' , {sameSite :'none' , secure:true}).json('deleted')
+ })
+
+
 //~ profile///
 
 app.get("/profile", (req, res) => {
@@ -157,7 +164,7 @@ const messages = await Message.find({
 }) ;
 
 
-//~ for People
+//~ for People //
 
 app.get('/people' ,async (req ,res)=>{
   const users = await User.find({} , {'_id':1 , username:1}) //! 2nd parameter says which all field i need from find()
@@ -165,6 +172,7 @@ app.get('/people' ,async (req ,res)=>{
   res.json(users)
 })
 
+  
 
 const server = app.listen(4040);
 
@@ -195,10 +203,11 @@ wss.on("connection", (connection, req) => {
  connection.timer = setInterval(() => {
     connection.ping();    //~ ping is to check the active status
   connection.deathTimer = setTimeout(() => {
-      connection.isAlive = false
+      connection.isAlive = false;
+      clearInterval(connection.timer)
       connection.terminate()
       notifyAboutOnlinePeople();
-      console.log(dead)
+      console.log('dead')
     }, 1000);     
   }, 5000);
 
