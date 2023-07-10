@@ -3,7 +3,7 @@
 <h4>This is a Chat Application built using the MERN (MongoDB, Express.js, React.js, Node.js) stack along with WebSocket for real-time communication between users. The application also incorporates a robust authentication system using JWT (JSON Web Tokens) for secure and authorized access.</h3>
 
 
-https://github.com/praveenkrao94/ArivuChat/assets/126244668/89e8a10f-735c-4bb3-b51a-488a45c8c2ef
+
 
 
 
